@@ -42,8 +42,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           pull: true
           push: true
-          cache-from: type=registry,ref=0x8861/redis-cell:stable
-          cache-to: type=inline
+          no-cache: true
           tags: ${{ steps.prep.outputs.tags }}
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
