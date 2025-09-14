@@ -1,0 +1,74 @@
+name: Test Docker Build
+
+on:
+  workflow_dispatch:  # Manual trigger from GitHub Actions UI
+    inputs:
+      test_tag:
+        description: 'Test tag version (e.g., 0.4.1-redis8.2-bookworm)'
+        required: true
+        default: 'test-build'
+  pull_request:  # Also test on PRs
+    branches:
+      - master
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare
+        id: prep
+        run: |
+          # For testing, don't push to Docker Hub
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TEST_TAG="${{ github.event.inputs.test_tag }}"
+            TAGS="redis-cell:latest,redis-cell:stable,redis-cell:${TEST_TAG}"
+          else
+            # For PRs, just use a simple test tag
+            SHORT_SHA=${GITHUB_SHA::8}
+            TAGS="redis-cell:pr-${SHORT_SHA}"
+          fi
+          
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Testing build with tags: ${TAGS}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build (without push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          pull: true
+          push: false  # Don't push to registry
+          tags: ${{ steps.prep.outputs.tags }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Test the built image
+        run: |
+          # Load the image for amd64 only (for testing)
+          docker buildx build --load --platform linux/amd64 -t redis-cell:test .
+          
+          # Start Redis with the module
+          docker run -d --name test-redis redis-cell:test
+          
+          # Wait for Redis to start
+          sleep 5
+          
+          # Test if the module is loaded
+          docker exec test-redis redis-cli MODULE LIST | grep redis-cell
+          
+          # Test the CL.THROTTLE command
+          docker exec test-redis redis-cli CL.THROTTLE test-key 15 30 60 1
+          
+          # Clean up
+          docker stop test-redis
+          docker rm test-redis
+          
+          echo "✅ All tests passed!"

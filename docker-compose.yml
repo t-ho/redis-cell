@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  redis-cell:
+    build: .
+    image: 0x8861/redis-cell:latest
+    container_name: redis-cell
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --loadmodule /usr/local/lib/redis/modules/libredis_cell.so --save 60 1 --loglevel warning
+    restart: unless-stopped
+
+volumes:
+  redis-data:
