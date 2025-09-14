@@ -1,0 +1,49 @@
+name: Docker Image CI
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=0x8861/redis-cell
+          RELEASE_VERSION=${GITHUB_REF#refs/tags/}
+          
+          # Create tags: latest, stable, and the specific release version
+          TAGS="${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:stable,${DOCKER_IMAGE}:${RELEASE_VERSION}"
+          
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Building and pushing: ${TAGS}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          pull: true
+          push: true
+          cache-from: type=registry,ref=0x8861/redis-cell:stable
+          cache-to: type=inline
+          tags: ${{ steps.prep.outputs.tags }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1

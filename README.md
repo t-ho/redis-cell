@@ -24,6 +24,32 @@ per command as seen from a Redis client).
 
 ## Install
 
+### Docker
+
+The easiest way to use redis-cell with the latest stable Redis is via Docker:
+
+```bash
+# Using Docker Hub image (latest version)
+docker run -d -p 6379:6379 0x8861/redis-cell:latest
+
+# Using a specific version (recommended for production)
+docker run -d -p 6379:6379 0x8861/redis-cell:0.4.0-redis8.2-bookworm
+
+# Or with docker-compose
+docker-compose up -d
+```
+
+The Docker image is based on the official Redis stable image and automatically loads the redis-cell module.
+
+**Available Tags:**
+- `latest` - Most recent release
+- `stable` - Same as latest, for production use
+- `<version>-redis<redis-version>-bookworm` - Specific version with explicit Redis version (e.g., `0.4.0-redis8.2-bookworm`)
+
+**Note:** Version tags include the Redis version and OS for full compatibility transparency. This helps ensure you're using the exact environment tested for your production deployment.
+
+### Binary Installation
+
 [Binaries for redis-cell are available for Mac and Linux][releases]. Open
 an issue if there's interest in having binaries for architectures or operating
 systems that are not currently supported.
@@ -37,7 +63,9 @@ $ tar -zxf redis-cell-*.tar.gz
 $ cp libredis_cell.so /path/to/modules/
 ```
 
-**Or**, clone and build the project from source. You'll need to [install
+### Build from Source
+
+Clone and build the project from source. You'll need to [install
 Rust][rust-downloads] to do so (this may be as easy as a `brew install rust` if
 you're on Mac).
 
@@ -49,6 +77,18 @@ $ cp target/release/libredis_cell.dylib /path/to/modules/
 ```
 
 **Note that Rust 1.13.0+ is required.**
+
+### Build with Docker
+
+To build the complete Redis server image with redis-cell module included:
+
+```bash
+$ git clone https://github.com/t-ho/redis-cell.git
+$ cd redis-cell
+$ docker build -t redis-cell .
+```
+
+This creates a Docker image based on the official Redis stable image with the redis-cell module built and loaded automatically. This method ensures compatibility by building in the correct environment.
 
 Run Redis pointing to the newly built module:
 
