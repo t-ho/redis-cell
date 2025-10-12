@@ -1,13 +1,13 @@
 name: Test Docker Build
 
 on:
-  workflow_dispatch:  # Manual trigger from GitHub Actions UI
+  workflow_dispatch: # Manual trigger from GitHub Actions UI
     inputs:
       test_tag:
-        description: 'Test tag version (e.g., 0.4.1-redis8.2-bookworm)'
+        description: "Test tag version (e.g., 0.4.1-redis8.2-bookworm)"
         required: true
-        default: 'test-build'
-  pull_request:  # Also test on PRs
+        default: "test-build"
+  pull_request: # Also test on PRs
     branches:
       - master
 
@@ -31,7 +31,7 @@ jobs:
             SHORT_SHA=${GITHUB_SHA::8}
             TAGS="redis-cell:pr-${SHORT_SHA}"
           fi
-          
+
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
           echo "Testing build with tags: ${TAGS}"
 
@@ -45,7 +45,7 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           pull: true
-          push: false  # Don't push to registry
+          push: false # Don't push to registry
           tags: ${{ steps.prep.outputs.tags }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
@@ -54,21 +54,22 @@ jobs:
         run: |
           # Load the image for amd64 only (for testing)
           docker buildx build --load --platform linux/amd64 -t redis-cell:test .
-          
+
           # Start Redis with the module
           docker run -d --name test-redis redis-cell:test
-          
+
           # Wait for Redis to start
           sleep 5
-          
+
           # Test if the module is loaded
           docker exec test-redis redis-cli MODULE LIST | grep redis-cell
-          
+
           # Test the CL.THROTTLE command
           docker exec test-redis redis-cli CL.THROTTLE test-key 15 30 60 1
-          
+
           # Clean up
           docker stop test-redis
           docker rm test-redis
-          
+
           echo "✅ All tests passed!"
+

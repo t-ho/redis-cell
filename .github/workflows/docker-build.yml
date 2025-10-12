@@ -18,10 +18,10 @@ jobs:
         run: |
           DOCKER_IMAGE=0x8861/redis-cell
           RELEASE_VERSION=${GITHUB_REF#refs/tags/}
-          
+
           # Create tags: latest, stable, and the specific release version
           TAGS="${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:stable,${DOCKER_IMAGE}:${RELEASE_VERSION}"
-          
+
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
           echo "Building and pushing: ${TAGS}"
 
@@ -44,3 +44,4 @@ jobs:
           push: true
           no-cache: true
           tags: ${{ steps.prep.outputs.tags }}
+
